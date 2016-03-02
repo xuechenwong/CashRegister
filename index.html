@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>收银机测试页面</title>		
+	</head>
+	<body>
+		<div id='list'></div>
+		<script src="js/cashRegister.js"></script>
+		<script>
+			// 打折优惠
+			var DisCountArray = ['ITEM00003','ITEM00002'];
+			// var DisCountArray = [];
+			// 满二免一优惠
+			var FullCutArray = ['ITEM00001','ITEM00006'];
+			// var OneFree = [];
+			//商品输入
+			var input = [
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00001",
+				"ITEM00002-5",
+				"ITEM00005",
+				"ITEM00002",
+				"ITEM00005",
+				"ITEM00004",
+				"ITEM00004",
+				"ITEM00003-5",
+				"ITEM00003-2",
+				"ITEM00002",
+				"ITEM00002",
+				"ITEM00005",
+				"ITEM00005",
+				"ITEM00005",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00006",
+				"ITEM00003-4",
+			];
+
+			// 实例化CashRegister
+			var cashRegister = new CashRegister(input,DisCountArray,FullCutArray);
+			//显示打印小票到页面上
+			document.getElementById('list').innerText = cashRegister.getOrderList();
+		</script>
+	</body>
+</html>
