@@ -1,17 +1,20 @@
-(function(window){
-	// 商品类
-	// name:商品名称
-	// counts:商品个数
-	// unitPrice:商品单价
-	// category:商品计量单位
-	// barCode:商品条形码
+(function(window,undefined){
+	/**
+	 * Goods Class
+	 * @param {name} 商品名称
+	 * @param {counts} 商品个数
+	 * @param {unitPrice} 商品单价
+	 * @param {category} 商品计量单位
+	 * @param {barCode} 商品条形码
+	 * Date 2016-03-02 22:00
+	 * Author XueChen.Wang
+	 */
 	function Goods(name,counts,unitPrice,category,barCode){
 		this.name = name;
 		this.counts = counts;
 		this.unitPrice = unitPrice;
 		this.category = category;
 		this.barCode = barCode;
-
 	}
 
 	Goods.prototype.getName = function(){
@@ -33,7 +36,10 @@
 		return this.barCode;
 	};
 	var GoodsArray = [];
-
+	/*
+	**如果需要新添加商品信息，需在此处new Goods()之后调用GoodsArray.push()方法
+	**仅就示例来说，暂时只添加了六种商品
+	*/
 	var goods1 = new Goods('苹果','1','5.5','斤','ITEM00003');
 	var goods2 = new Goods('可口可乐','1','3','瓶','ITEM00001');
 	var goods3 = new Goods('羽毛球','1','4','个','ITEM00002');
@@ -49,26 +55,30 @@
 	GoodsArray.push(goods6);
 
 	//根据条形码从商品库GoodsArray中查询对应的名称等其他信息，返回一个商品Goods类
-	var getInfoByBarCode = function(barCode){
-		for(var i = 0; i < GoodsArray.length;i++){
+	function getInfoByBarCode(barCode){
+		var i = GoodsArray.length;
+		while(i--){
 			if(Goods.prototype.getBarCode.call(GoodsArray[i]) == barCode){
 				return GoodsArray[i];
 			}else{
 				// alert('no match');
 			}
 		}
-	};
+	}
 
-	var CashRegister = function(input,discount,fullCutArray){
-		this.input = input;
-		this.discount = discount;
-		this.fullCutArray = fullCutArray;
+	var CashRegister = function(inputList,discountArray,fullCutListArray){
+		this.input = inputList;
+		this.discount = discountArray;
+		this.fullCutArray = fullCutListArray;
 		this._goodsList = [];
+		this._finalList = [];
 
-		this._exec = function(){
+		//解析原始商品数组
+		this._parseOriginList = function(){
 			var count = 1;  
 		    var distinctGoodsArray= new Array();//存放不重复的商品条码列表，如ITEM0001-3和ITEM0001-4暂时视为两种商品 
 		    var sum = new Array(); // 存放不重复商品出现的次数
+		    // var length = input.length;
 		    for (var i = 0; i < input.length; i++) {   
 		        for(var j=i+1;j<input.length;j++)  
 		        {  
@@ -83,7 +93,8 @@
 		        count =1;  //再将count重新赋值，进入下一个条码的判断  
 		    }  
 		    //计算输入的条码集合中不同条码出现的次数  
-		    for (var i = 0 ; i < distinctGoodsArray.length; i++) {   
+		    var i = distinctGoodsArray.length;
+		    while (i--) {   
 		       var goods = {};
 		       if(distinctGoodsArray[i].indexOf('-') != -1){
 		       		// console.log(Goods.prototype.getName.call(getInfoByBarCode(distinctGoodsArray[i].split('-')[0])));
@@ -107,11 +118,53 @@
 		       this._goodsList.push(goods);
 
 		    }
-		    return this._goodsList;
+		    return this._generatePrintList(this._goodsList);
 		};
 
-		this._printGoodsList = function(resultList){
-			var finalList = [];
+		//生成需要打印小票的购物List
+		this._generatePrintList = function(printList){
+			var k = printList.length;
+			while(k --){
+				var result = {};
+				if(this.fullCutArray.contains(Goods.prototype.getBarCode.call(printList[k]))){//满足满二免一优惠	
+					result.total = Math.round(Goods.prototype.getUnitPrice.call(printList[k]) * (Goods.prototype.getCount.call(printList[k]) - Math.floor((Goods.prototype.getCount.call(printList[k])) / 3)) * 100)/100;
+					result.save = Math.round(Goods.prototype.getUnitPrice.call(printList[k]) * Math.floor(Goods.prototype.getCount.call(printList[k]) / 3) * 100)/100;
+					result.name = Goods.prototype.getName.call(printList[k]);
+					result.unitPrice = Goods.prototype.getUnitPrice.call(printList[k]) + '元';
+					result.count = Goods.prototype.getCount.call(printList[k]);
+					result.category = Goods.prototype.getCategory.call(printList[k]);
+					result.isfullCutArray = true;
+					result.isDiscount = false;
+					result.freeCount = Math.floor(Goods.prototype.getCount.call(printList[k]) / 3);
+				}else if(this.discount.contains(Goods.prototype.getBarCode.call(printList[k]))){//满足95折优惠商品
+					result.total = Math.round(Goods.prototype.getUnitPrice.call(printList[k]) * Goods.prototype.getCount.call(printList[k]) * 0.95 * 100)/100;
+					result.save = Math.round(Goods.prototype.getUnitPrice.call(printList[k]) * Goods.prototype.getCount.call(printList[k]) * 0.05 * 100)/100;
+					result.name = Goods.prototype.getName.call(printList[k]);
+					result.unitPrice = Goods.prototype.getUnitPrice.call(printList[k]) + '元';
+					result.count = Goods.prototype.getCount.call(printList[k]);
+					result.category = Goods.prototype.getCategory.call(printList[k]);
+					result.isfullCutArray = false;
+					result.isDiscount = true;
+					result.freeCount = 0;
+				}else{
+					result.total = Math.round(Goods.prototype.getUnitPrice.call(printList[k]) * Goods.prototype.getCount.call(printList[k]) * 100)/100;
+					result.save = 0;
+					result.name = Goods.prototype.getName.call(printList[k]);
+					result.unitPrice = Goods.prototype.getUnitPrice.call(printList[k]) + '元';
+					result.count = Goods.prototype.getCount.call(printList[k]);
+					result.category = Goods.prototype.getCategory.call(printList[k]);
+					result.isfullCutArray = false;
+					result.isDiscount = false;
+					result.freeCount = 0;
+				}
+				this._finalList.push(result);
+				
+			}
+			return this._printGoodsList();
+		};
+
+		// 打印商品信息
+		this._printGoodsList = function(){
 			var commonContent = '******<没钱赚商店>购物清单*****\n';;
 			var fullCutArrayContent = '买二赠一商品：\n';
 			var totalContent = '';
@@ -120,62 +173,27 @@
 			var totalPrice = 0;
 			var savePrice = 0;
 
-			for(var k= 0; k < resultList.length; k++){
-				var result = {};
-				if(this.fullCutArray.contains(Goods.prototype.getBarCode.call(resultList[k]))){//满足满二免一优惠	
-					result.total = Math.round(Goods.prototype.getUnitPrice.call(resultList[k]) * (Goods.prototype.getCount.call(resultList[k]) - Math.floor((Goods.prototype.getCount.call(resultList[k])) / 3)) * 100)/100;
-					result.save = Math.round(Goods.prototype.getUnitPrice.call(resultList[k]) * Math.floor(Goods.prototype.getCount.call(resultList[k]) / 3) * 100)/100;
-					result.name = Goods.prototype.getName.call(resultList[k]);
-					result.unitPrice = Goods.prototype.getUnitPrice.call(resultList[k]) + '元';
-					result.count = Goods.prototype.getCount.call(resultList[k]);
-					result.category = Goods.prototype.getCategory.call(resultList[k]);
-					result.isfullCutArray = true;
-					result.isDiscount = false;
-					result.freeCount = Math.floor(Goods.prototype.getCount.call(resultList[k]) / 3);
-				}else if(this.discount.contains(Goods.prototype.getBarCode.call(resultList[k]))){//满足95折优惠商品
-					result.total = Math.round(Goods.prototype.getUnitPrice.call(resultList[k]) * Goods.prototype.getCount.call(resultList[k]) * 0.95 * 100)/100;
-					result.save = Math.round(Goods.prototype.getUnitPrice.call(resultList[k]) * Goods.prototype.getCount.call(resultList[k]) * 0.05 * 100)/100;
-					result.name = Goods.prototype.getName.call(resultList[k]);
-					result.unitPrice = Goods.prototype.getUnitPrice.call(resultList[k]) + '元';
-					result.count = Goods.prototype.getCount.call(resultList[k]);
-					result.category = Goods.prototype.getCategory.call(resultList[k]);
-					result.isfullCutArray = false;
-					result.isDiscount = true;
-					result.freeCount = 0;
-				}else{
-					result.total = Math.round(Goods.prototype.getUnitPrice.call(resultList[k]) * Goods.prototype.getCount.call(resultList[k]) * 100)/100;
-					result.save = 0;
-					result.name = Goods.prototype.getName.call(resultList[k]);
-					result.unitPrice = Goods.prototype.getUnitPrice.call(resultList[k]) + '元';
-					result.count = Goods.prototype.getCount.call(resultList[k]);
-					result.category = Goods.prototype.getCategory.call(resultList[k]);
-					result.isfullCutArray = false;
-					result.isDiscount = false;
-					result.freeCount = 0;
-				}
-				finalList.push(result);
-			}
-
-			for(var j = 0; j < finalList.length;j++){
+			var j = this._finalList.length;
+			while(j--){
 				var goodsContent = '';
 				var freeContent = '';
-				totalPrice += finalList[j].total;
-				if(finalList[j].isfullCutArray){
+				totalPrice += this._finalList[j].total;
+				if(this._finalList[j].isfullCutArray){
 					fullCutArrayFlag = true;
 					globalFlag = true;
-					goodsContent = '名称: ' + finalList[j].name + ', 数量：' + finalList[j].count + finalList[j].category + ', 单价：' + finalList[j].unitPrice + ', 小计：' + finalList[j].total + '(元)\n';
+					goodsContent = '名称: ' + this._finalList[j].name + ', 数量：' + this._finalList[j].count + this._finalList[j].category + ', 单价：' + this._finalList[j].unitPrice + ', 小计：' + this._finalList[j].total + '(元)\n';
 					commonContent += goodsContent;
 
-					freeContent = '名称：' + finalList[j].name + ', 数量:' + finalList[j].freeCount + finalList[j].category + '\n';
+					freeContent = '名称：' + this._finalList[j].name + ', 数量:' + this._finalList[j].freeCount + this._finalList[j].category + '\n';
 					fullCutArrayContent += freeContent;
-					savePrice += finalList[j].save;
-				}else if(finalList[j].isDiscount){
+					savePrice += this._finalList[j].save;
+				}else if(this._finalList[j].isDiscount){
 					globalFlag = true;
-					goodsContent = '名称: ' + finalList[j].name + ', 数量：' + finalList[j].count + finalList[j].category + ', 单价：' + finalList[j].unitPrice + ', 小计：' + finalList[j].total + '(元), 节省' + finalList[j].save + '(元)\n';
+					goodsContent = '名称: ' + this._finalList[j].name + ', 数量：' + this._finalList[j].count + this._finalList[j].category + ', 单价：' + this._finalList[j].unitPrice + ', 小计：' + this._finalList[j].total + '(元), 节省' + this._finalList[j].save + '(元)\n';
 					commonContent += goodsContent;
-					savePrice += finalList[j].save;
+					savePrice += this._finalList[j].save;
 				}else{
-					goodsContent = '名称: ' + finalList[j].name + ', 数量：' + finalList[j].count + finalList[j].category + ', 单价：' + finalList[j].unitPrice + ', 小计：' + finalList[j].total + '(元)\n';
+					goodsContent = '名称: ' + this._finalList[j].name + ', 数量：' + this._finalList[j].count + this._finalList[j].category + ', 单价：' + this._finalList[j].unitPrice + ', 小计：' + this._finalList[j].total + '(元)\n';
 					commonContent += goodsContent;
 				}
 			}
@@ -201,16 +219,9 @@
 		};
 	};
 	
-
 	CashRegister.prototype.getOrderList = function(){
-		var resultList = this._exec();
-		if(resultList.length){
-			return this._printGoodsList(resultList);
-		}else{
-			return '';
-		}	
+		return this._parseOriginList();
 	};
-
 
 	Array.prototype.contains = function(value){
 		for(i in this){
